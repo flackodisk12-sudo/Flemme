@@ -1,91 +1,103 @@
 const { getPrefix } = global.utils;
-const { commands } = global.GoatBot;
+const { commands, aliases } = global.GoatBot;
 
 module.exports = {
   config: {
     name: "help",
-    version: "3.5",
-    author: "Mostakim",
+    aliases: ["menu", "aide"],
+    version: "4.0",
+    author: "Célestin x ChatGPT",
     usePrefix: false,
     role: 0,
     category: "info",
     priority: 1
   },
 
-  onStart: async function ({ message, args, event, threadsData, role }) {
+  onStart: async function ({ message, args, event, role }) {
     const prefix = getPrefix(event.threadID);
     const arg = args[0]?.toLowerCase();
 
-    const header = "╔═━「 𝐇𝐄𝐋𝐏 𝐌𝐄𝐍𝐔 」━═╗";
-    const footer = "╚═━──────────────━═╝";
+    const top = "━━━━━━♡♥♡━━━━━━";
+    const bottom = "━━━━━━♡♥♡━━━━━━";
 
+    // 📜 MENU GLOBAL
     if (!arg) {
       const list = Array.from(commands.entries())
         .filter(([_, cmd]) => cmd.config?.role <= role)
-        .map(([name]) => `┃ ✦ ${name}`)
+        .map(([name]) => `➤ ${name}`)
         .join("\n");
 
       return message.reply(
-        `${header}\n` +
-        `┃ 🔑 Prefix: ${prefix}\n` +
-        `┃ 📂 Total Commands: ${commands.size}\n` +
-        `┃ ⚙️ Available Commands:\n` +
-        `${list}\n` +
-        `${footer}\n` +
-        `\n📌 Use \`${prefix}help -<category>\` to filter by category\n` +
-        `📌 Use \`${prefix}help <command>\` to see command info`
+`${top}
+📜 𝐌𝐄𝐍𝐔 𝐃𝐄𝐒 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐄𝐒
+
+🔑 Préfixe : ${prefix}
+📊 Total : ${commands.size}
+
+${list}
+
+${bottom}
+
+📌 ${prefix}help <commande>
+📌 ${prefix}help -<catégorie>`
       );
     }
 
-    if (arg === "-c" && args[1]) {
-      const cmdName = args[1].toLowerCase();
-      const cmd = commands.get(cmdName) || commands.get(global.GoatBot.aliases.get(cmdName));
-
-      if (!cmd || cmd.config.role > role)
-        return message.reply(`✘ Command "${cmdName}" not found or access denied.`);
-
-      return message.reply(
-        `${header}\n` +
-        `┃ ✦ Command: ${cmdName}\n` +
-        `┃ ✦ Category: ${cmd.config.category || "Uncategorized"}\n` +
-        `${footer}`
-      );
-    }
-
+    // 📂 FILTRE CATÉGORIE
     if (arg.startsWith("-")) {
       const category = arg.slice(1).toLowerCase();
-      const matched = Array.from(commands.entries())
-        .filter(([_, cmd]) => cmd.config?.category?.toLowerCase() === category && cmd.config.role <= role)
-        .map(([name]) => `┃ ✦ ${name}`);
 
-      if (matched.length === 0)
-        return message.reply(`✘ No commands found under "${category}".`);
+      const list = Array.from(commands.entries())
+        .filter(([_, cmd]) =>
+          cmd.config?.category?.toLowerCase() === category &&
+          cmd.config.role <= role
+        )
+        .map(([name]) => `➤ ${name}`);
+
+      if (list.length === 0)
+        return message.reply(`❌ Aucune commande trouvée pour "${category}"`);
 
       return message.reply(
-        `╔═━「 𝐂𝐀𝐓𝐄𝐆𝐎𝐑𝐘: ${category.toUpperCase()} 」━═╗\n` +
-        `${matched.join("\n")}\n` +
-        `${footer}\n` +
-        `\n📌 Try: \`${prefix}help <command>\` to view details`
+`${top}
+📂 𝐂𝐀𝐓𝐄́𝐆𝐎𝐑𝐈𝐄 : ${category.toUpperCase()}
+
+${list.join("\n")}
+
+${bottom}`
       );
     }
 
-    const cmd = commands.get(arg) || commands.get(global.GoatBot.aliases.get(arg));
+    // 🔍 DÉTAIL COMMANDE
+    const cmd = commands.get(arg) || commands.get(aliases.get(arg));
 
     if (!cmd || cmd.config.role > role)
-      return message.reply(`✘ Command "${arg}" not found.`);
+      return message.reply(`❌ Commande "${arg}" introuvable`);
 
     const info = cmd.config;
-    const guide = info.guide?.en || "No usage info.";
-    const desc = info.longDescription?.en || "No description.";
+
+    const desc =
+      info.longDescription?.fr ||
+      info.longDescription?.en ||
+      "Aucune description.";
+
+    const guide =
+      info.guide?.fr ||
+      info.guide?.en ||
+      "Aucune utilisation.";
 
     return message.reply(
-      `╔═━「 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐃𝐄𝐓𝐀𝐈𝐋𝐒 」━═╗\n` +
-      `┃ ✦ Name: ${info.name}\n` +
-      `┃ ✦ Description: ${desc}\n` +
-      `┃ ✦ Usage: ${guide.replace(/{p}/g, prefix).replace(/{n}/g, info.name)}\n` +
-      `┃ ✦ Role: ${info.role}\n` +
-      `┃ ✦ Category: ${info.category || "Uncategorized"}\n` +
-      `${footer}`
+`${top}
+📌 𝐃𝐄́𝐓𝐀𝐈𝐋𝐒 𝐃𝐄 𝐋𝐀 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐄
+
+➤ Nom : ${info.name}
+➤ Description : ${desc}
+➤ Utilisation : ${guide
+        .replace(/{p}/g, prefix)
+        .replace(/{n}/g, info.name)}
+➤ Rôle : ${info.role}
+➤ Catégorie : ${info.category || "aucune"}
+
+${bottom}`
     );
   }
 };
